@@ -66,7 +66,6 @@ def normalizar_expresion(expresion):
     expresion = expresion.replace("más", "+")
     expresion = expresion.replace("menos", "-")
     return expresion
-
 # --- Funciones para hora, fecha y clima ---
 def obtener_hora():
     ahora = datetime.now()
@@ -120,7 +119,6 @@ def convertir_a_latex(mensaje):
         return sp.latex(expr)
     except Exception:
         return None
-
 # --- Graficar función ---
 def graficar_funcion(expresion_str):
     try:
@@ -214,7 +212,6 @@ def responder_modo_estudiante(mensaje):
     respuesta = completado.choices[0].message.content.strip()
     agregar_a_historial("assistant", respuesta)
     return respuesta
-
 @app.route("/")
 def index():
     return render_template("index.html")
@@ -264,20 +261,9 @@ def preguntar():
                 ciudad = palabras[i + 1].capitalize()
                 break
         respuesta = obtener_clima(ciudad)
-
-
-
-
-
-ChatGPT Plus
-python
-Copiar
-Editar
-    agregar_a_historial("user", mensaje)
-    agregar_a_historial("assistant", respuesta)
-elif intencion == "graficar":
-    # Suponemos que el usuario quiere graficar la expresión que sigue
-    try:
+        agregar_a_historial("user", mensaje)
+        agregar_a_historial("assistant", respuesta)
+    elif intencion == "graficar":
         expresion_a_graficar = mensaje.lower().replace("grafica", "").replace("gráfica", "").replace("graficar", "").strip()
         if not expresion_a_graficar:
             respuesta = "Por favor, dime qué función quieres que grafique."
@@ -286,31 +272,29 @@ elif intencion == "graficar":
             respuesta = imagen_html
         agregar_a_historial("user", mensaje)
         agregar_a_historial("assistant", "[Imagen gráfica generada]")
-    except Exception as e:
-        respuesta = f"No pude graficar: {e}"
-elif intencion == "abrir_app":
-    nombre_app = mensaje.lower().replace("abre", "").replace("abrir", "").replace("ejecuta", "").replace("ejecutar", "").strip()
-    respuesta = abrir_aplicacion(nombre_app)
-    agregar_a_historial("user", mensaje)
-    agregar_a_historial("assistant", respuesta)
-elif intencion == "espacio":
-    respuesta = obtener_espacio_libre()
-    agregar_a_historial("user", mensaje)
-    agregar_a_historial("assistant", respuesta)
-else:
-    # Conversación general: enviar el historial para contexto
-    historial = agregar_a_historial("user", mensaje)
-    try:
-        completion = client.chat.completions.create(
-            model="gpt-4",
-            messages=historial
-        )
-        respuesta = completion.choices[0].message.content.strip()
+    elif intencion == "abrir_app":
+        nombre_app = mensaje.lower().replace("abre", "").replace("abrir", "").replace("ejecuta", "").replace("ejecutar", "").strip()
+        respuesta = abrir_aplicacion(nombre_app)
+        agregar_a_historial("user", mensaje)
         agregar_a_historial("assistant", respuesta)
-    except Exception as e:
-        respuesta = f"Error al comunicarse con la IA: {e}"
+    elif intencion == "espacio":
+        respuesta = obtener_espacio_libre()
+        agregar_a_historial("user", mensaje)
+        agregar_a_historial("assistant", respuesta)
+    else:
+        historial = agregar_a_historial("user", mensaje)
+        try:
+            completion = client.chat.completions.create(
+                model="gpt-4",
+                messages=historial
+            )
+            respuesta = completion.choices[0].message.content.strip()
+            agregar_a_historial("assistant", respuesta)
+        except Exception as e:
+            respuesta = f"Error al comunicarse con la IA: {e}"
 
-logging.info(f"Asistente: {respuesta}")
-return jsonify({"respuesta": respuesta})
-if name == "main":
-app.run(debug=True)
+    logging.info(f"Asistente: {respuesta}")
+    return jsonify({"respuesta": respuesta})
+
+if __name__ == "__main__":
+    app.run(debug=True)
