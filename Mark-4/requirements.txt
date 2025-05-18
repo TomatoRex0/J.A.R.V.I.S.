@@ -1,0 +1,8 @@
+Flask
+openai
+requests
+matplotlib
+sympy
+psutil
+numpy
+gunicorn

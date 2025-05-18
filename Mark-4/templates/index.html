@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>J.A.R.V.I.S. Mark 3</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <!-- Fuente futurista -->
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
+    <!-- MathJax para mostrar LaTeX -->
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <style>
+        body {
+            background-color: #0c0f17;
+            color: #00ffff;
+            font-family: 'Orbitron', sans-serif;
+            padding: 20px;
+        }
+        h1 {
+            text-align: center;
+            font-size: 3em;
+            margin-bottom: 40px;
+        }
+        #hud {
+            border: 2px solid #00ffff;
+            border-radius: 10px;
+            padding: 20px;
+            background-color: rgba(0, 255, 255, 0.1);
+        }
+        input, button {
+            padding: 10px;
+            font-size: 16px;
+            margin: 10px 5px;
+            border: none;
+            border-radius: 5px;
+        }
+        input {
+            width: 50%;
+        }
+        button {
+            background-color: #00ffff;
+            color: #000;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #00cccc;
+        }
+        #conversacion {
+            margin-top: 20px;
+            max-height: 400px;
+            overflow-y: auto;
+            background-color: rgba(255, 255, 255, 0.05);
+            padding: 10px;
+            border-radius: 5px;
+        }
+        .mensaje {
+            margin-bottom: 10px;
+        }
+        .usuario {
+            color: #00ffcc;
+        }
+        .jarvis {
+            color: #ffcc00;
+        }
+        .grafico {
+            max-width: 100%;
+            margin-top: 10px;
+            border: 2px solid #00ffff;
+            border-radius: 8px;
+        }
+    </style>
+</head>
+<body>
+    <h1><i class="fas fa-robot"></i> J.A.R.V.I.S. Mark 3</h1>
+    <div id="hud">
+        <input type="text" id="mensaje" placeholder="Escribe o usa el micrófono...">
+        <button onclick="enviar()"><i class="fas fa-paper-plane"></i> Enviar</button>
+        <button onclick="iniciarVoz()"><i class="fas fa-microphone"></i> Hablar</button>
+        <div id="conversacion"></div>
+    </div>
+
+    <!-- Sonidos -->
+    <audio id="sonidoEnviar" src="/static/enviar.mp3"></audio>
+    <audio id="sonidoResponder" src="/static/responder.mp3"></audio>
+
+    <script>
+        function enviar(textoManual = null) {
+            const mensaje = textoManual || document.getElementById("mensaje").value;
+            if (!mensaje) return;
+
+            document.getElementById("sonidoEnviar").play();
+
+            const conversacion = document.getElementById("conversacion");
+            conversacion.innerHTML += `<p class='mensaje usuario'><strong>Tú:</strong> ${mensaje}</p>`;
+
+            fetch("/preguntar", {
+                method: "POST",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify({ mensaje: mensaje })
+            })
+            .then(response => response.json())
+            .then(data => {
+                const respuesta = data.respuesta;
+                const latex = data.latex || null;
+                const grafico = data.grafico || null;
+
+                let htmlRespuesta = `<p class='mensaje jarvis'><strong>Jarvis:</strong> ${respuesta}</p>`;
+
+                if (latex) {
+                    htmlRespuesta += `<p class='mensaje jarvis'>\\(${latex}\\)</p>`;
+                }
+
+                if (grafico) {
+                    htmlRespuesta += `<img class='grafico' src="${grafico}" alt="Gráfico generado por Jarvis">`;
+                }
+
+                conversacion.innerHTML += htmlRespuesta;
+                document.getElementById("mensaje").value = "";
+                document.getElementById("sonidoResponder").play();
+
+                MathJax.typeset();
+
+                const sintetizador = window.speechSynthesis;
+                const voz = new SpeechSynthesisUtterance(respuesta);
+                voz.lang = 'es-ES';
+                voz.pitch = 1.1;
+                voz.rate = 0.95;
+                sintetizador.speak(voz);
+            });
+        }
+
+        function iniciarVoz() {
+            const reconocimiento = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+            reconocimiento.lang = 'es-ES';
+            reconocimiento.start();
+
+            reconocimiento.onresult = function(evento) {
+                const texto = evento.results[0][0].transcript;
+                enviar(texto);
+            };
+        }
+    </script>
+</body>
+</html>
